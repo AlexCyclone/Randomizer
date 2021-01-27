@@ -2,9 +2,11 @@ package icu.cyclone;
 
 import icu.cyclone.command.CommandExecutor;
 import icu.cyclone.exception.RandomizerEndOfRangeException;
-import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
-import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author Aleksey Babanin
@@ -19,8 +21,7 @@ public class Randomizer {
     private int min;
     private int max;
     private boolean inactive;
-    private Set<Integer> values;
-    private int maxValuesCount;
+    private List<Integer> values;
 
     public Randomizer() {
         init();
@@ -29,8 +30,13 @@ public class Randomizer {
     private void init() {
         min = CliUtils.readInt(MIN_RANGE, MAX_RANGE, MESSAGE_MIN_VALUE);
         max = CliUtils.readInt(min, MAX_RANGE, MESSAGE_MAX_VALUE);
-        maxValuesCount = max - min + 1;
-        values = new HashSet<>(maxValuesCount, 1);
+        fillValues();
+    }
+
+    private void fillValues() {
+        values = IntStream.range(min, max + 1)
+                .boxed()
+                .collect(Collectors.toCollection(LinkedList::new));
     }
 
     public void runCLI() {
@@ -45,21 +51,15 @@ public class Randomizer {
     }
 
     public int generateNext() {
-        if (values.size() >= maxValuesCount) {
+        if (values.isEmpty()) {
             throw new RandomizerEndOfRangeException();
         }
 
         Random random = new Random();
-        Integer value = null;
+        int index = random.nextInt(values.size());
 
-        while (value == null) {
-            value = min + random.nextInt(maxValuesCount);
-            if (values.contains(value)) {
-                value = null;
-            } else {
-                values.add(value);
-            }
-        }
+        int value = values.get(index);
+        values.remove(index);
         return value;
     }
 }
